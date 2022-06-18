@@ -105,6 +105,9 @@ kind: ClusterConfiguration
 kubernetesVersion: $k8s_linux_apiserver
 networking:
   podSubnet: "100.244.0.0/16"
+apiServer:
+  extraArgs:
+    feature-gates: "WindowsHostProcessContainers=true"
 EOF
 
 # Ignore kubelet mismatch in the copy process
@@ -126,6 +129,19 @@ rm -f /var/sync/shared/kubejoin.ps1
 cat << EOF > /var/sync/shared/kubejoin.ps1
 stop-service -name kubelet
 cp C:\sync\windows\bin\* c:\k
+
+echo "************************************************************************************"
+stop-service -name containerd
+echo "downloading containerd"
+curl https://github.com/containerd/containerd/releases/download/v1.6.6/containerd-1.6.6-windows-amd64.tar.gz -o containerd-1.6.6-windows-amd64.tar.gz
+
+echo "Uncompress"
+tar.exe -xf .\containerd-1.6.6-windows-amd64.tar.gz
+echo "Copy containerD"
+cp .\bin\* 'C:\Program Files\containerd\'
+echo "Starting containerd"
+start-service -name containerd
+echo "************************************************************************************"
 
 \$env:path += ";C:\Program Files\containerd"
 [Environment]::SetEnvironmentVariable("Path", \$env:Path, [System.EnvironmentVariableTarget]::Machine)
